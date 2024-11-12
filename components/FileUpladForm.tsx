@@ -5,8 +5,24 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import axios from "axios";
 
 export const FileUploadForm = () => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [indexName, setIndexName] = useState("");
+  const [namespace, setNamespace] = useState("");
+
+  const onUpload = async () => {
+    setIsUploading(true);
+    const response = await axios.post("/api/upload", {
+      indexName,
+      namespace,
+    });
+
+    console.log(response);
+  };
+
   return (
     <div>
       <>
@@ -30,20 +46,31 @@ export const FileUploadForm = () => {
               <div className="grid gap-2">
                 <Label>Index Name</Label>
                 <Input
+                  value={indexName}
+                  onChange={(e) => setIndexName(e.target.value)}
                   placeholder="Index name"
                   className="disabled:cursor-default focus-visible:ring-0 focus-visible:ring-offset-0 "
+                  disabled={isUploading}
                 />
               </div>
               <div className="grid gap-2">
                 <Label>Namespace</Label>
                 <Input
+                  value={namespace}
+                  onChange={(e) => setNamespace(e.target.value)}
                   placeholder="Enter namespace"
                   className="disabled:cursor-default focus-visible:ring-0 focus-visible:ring-offset-0 "
+                  disabled={isUploading}
                 />
               </div>
             </div>
           </div>
-          <Button className="h-full w-full" variant={"outline"}>
+          <Button
+            className="h-full w-full"
+            variant={"outline"}
+            disabled={isUploading}
+            onClick={onUpload}
+          >
             <Database className="mr-2 h-4 w-4 text-rose-500" />
             Add Documents
           </Button>
