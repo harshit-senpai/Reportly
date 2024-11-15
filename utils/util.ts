@@ -1,10 +1,10 @@
 import { pipeline, env, FeatureExtractionPipeline } from "@xenova/transformers";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { Document } from "langchain/document";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
-// Configure environment before using pipeline
-env.cacheDir = "./node_modules/.cache/transformers"; // Set cache directory
-env.allowLocalModels = true; // Allow local model loading
+env.cacheDir = "./node_modules/.cache/transformers";
+env.allowLocalModels = true;
 
 export async function updateVectorDb(
   client: Pinecone,
@@ -36,5 +36,16 @@ async function processDoc(
   doc: Document,
   extractor: FeatureExtractionPipeline
 ) {
-  console.log(doc);
+  const splitter = new RecursiveCharacterTextSplitter();
+  const documentChunk = await splitter.splitText(doc.pageContent);
+  const filename = getFilename(doc.metadata.source);
+
+  console.log(documentChunk.length);
+}
+
+function getFilename(filename: string) {
+  const documentName = filename.substring(filename.lastIndexOf("/") + 1);
+  return (
+    documentName.substring(0, documentName.lastIndexOf(".")) || documentName
+  );
 }
