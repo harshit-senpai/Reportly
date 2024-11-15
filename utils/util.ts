@@ -1,5 +1,5 @@
 import { pipeline, env, FeatureExtractionPipeline } from "@xenova/transformers";
-import { Pinecone } from "@pinecone-database/pinecone";
+import { Pinecone, PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
 import { Document } from "langchain/document";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
@@ -41,6 +41,20 @@ async function processDoc(
   const filename = getFilename(doc.metadata.source);
 
   console.log(documentChunk.length);
+  let chunkBatchIndex = 0;
+  while (documentChunk.length > 0) {
+    chunkBatchIndex++;
+    const chunkBatch = documentChunk.splice(0, 10);
+    await processOneBatch(
+      client,
+      indexName,
+      namespace,
+      chunkBatch,
+      chunkBatchIndex,
+      filename,
+      extractor
+    );
+  }
 }
 
 function getFilename(filename: string) {
@@ -48,4 +62,41 @@ function getFilename(filename: string) {
   return (
     documentName.substring(0, documentName.lastIndexOf(".")) || documentName
   );
+}
+async function processOneBatch(
+  client: Pinecone,
+  indexName: string,
+  namespace: string,
+  chunkBatch: string[],
+  chunkBatchIndex: number,
+  filename: string,
+  extractor: FeatureExtractionPipeline
+) {
+  const output = await extractor(
+    chunkBatch.map((string) => string.replace(/\n/g, "")),
+    {
+      pooling: "cls",
+    }
+  );
+  console.log(output);
+  const embeddingsBatch = output.tolist();
+  let vectorBatch: PineconeRecord<RecordMetadata>[] = [];
+
+  for(let i=0; i< chunkBatch.length; i++) {
+    const chunk = chunkBatch[i];
+    const embedding = embeddingsBatch[i];
+
+    const vector: PineconeRecord<RecordMetadata> = {
+      id: `${filename}-${chunkBatchIndex}-${i}`,
+      values: embedding,
+      metadata: {
+        chunk: chunk,
+      },
+    };
+    vectorBatch.push(vector);
+  }
+
+  const index = client.Index(indexName).namespace(namespace);
+  await index.upsert(vectorBatch);
+  vectorBatch = [];
 }
