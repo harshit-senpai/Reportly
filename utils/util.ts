@@ -1,10 +1,23 @@
 import { pipeline, env, FeatureExtractionPipeline } from "@xenova/transformers";
-import { Pinecone, PineconeRecord, RecordMetadata } from "@pinecone-database/pinecone";
+import {
+  Pinecone,
+  PineconeRecord,
+  RecordMetadata,
+} from "@pinecone-database/pinecone";
 import { Document } from "langchain/document";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 env.cacheDir = "./node_modules/.cache/transformers";
 env.allowLocalModels = true;
+
+let callback: (
+  filename: string,
+  totalChunks: number,
+  chunksUpserted: number,
+  iscomplete: boolean
+) => void;
+let totalDocumentChunks = 0;
+let totalChunksUpserted = 0;
 
 export async function updateVectorDb(
   client: Pinecone,
@@ -18,6 +31,7 @@ export async function updateVectorDb(
     iscomplete: boolean
   ) => void
 ) {
+  callback = progressCallback;
   const modalName = "mixedbread-ai/mxbai-embed-large-v1";
   const extractor = await pipeline("feature-extraction", modalName, {
     quantized: false,
@@ -26,6 +40,9 @@ export async function updateVectorDb(
   console.log(extractor);
   for (const doc of docs) {
     await processDoc(client, indexName, namespace, doc, extractor);
+  }
+  if (callback !== undefined) {
+    callback("filename", totalDocumentChunks, totalChunksUpserted, true);
   }
 }
 
@@ -39,6 +56,8 @@ async function processDoc(
   const splitter = new RecursiveCharacterTextSplitter();
   const documentChunk = await splitter.splitText(doc.pageContent);
   const filename = getFilename(doc.metadata.source);
+
+  totalDocumentChunks = documentChunk.length;
 
   console.log(documentChunk.length);
   let chunkBatchIndex = 0;
@@ -82,7 +101,7 @@ async function processOneBatch(
   const embeddingsBatch = output.tolist();
   let vectorBatch: PineconeRecord<RecordMetadata>[] = [];
 
-  for(let i=0; i< chunkBatch.length; i++) {
+  for (let i = 0; i < chunkBatch.length; i++) {
     const chunk = chunkBatch[i];
     const embedding = embeddingsBatch[i];
 
@@ -98,5 +117,11 @@ async function processOneBatch(
 
   const index = client.Index(indexName).namespace(namespace);
   await index.upsert(vectorBatch);
+  totalChunksUpserted += vectorBatch.length;
+
+  if (callback !== undefined) {
+    callback(filename, totalDocumentChunks, totalChunksUpserted, false);
+  }
+
   vectorBatch = [];
 }
