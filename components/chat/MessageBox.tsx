@@ -8,7 +8,7 @@ interface MessageBoxProps {
 export const MessageBox = ({ role, content }: MessageBoxProps) => {
   return (
     <Card>
-      <CardContent>{content}</CardContent>
+      <CardContent className="p-6 text-sm">{content}</CardContent>
       {role !== "user" && (
         <CardFooter className="border-t bg-muted/50 px-6 py-3 text-xs text-muted-foreground">
           Disclaimer: The medical advice and recommendations provided by this
