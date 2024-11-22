@@ -9,7 +9,11 @@ import { Textarea } from "./ui/textarea";
 import { ChangeEvent, useState } from "react";
 import { toast } from "sonner";
 
-export const ReportContent = () => {
+interface ReportContentProps {
+  onReportConfirmation: (reportSummary: string) => void;
+}
+
+export const ReportContent = ({ onReportConfirmation }: ReportContentProps) => {
   const [base64Data, setBase64Data] = useState<string>("");
   const [reportSummary, setReportSummary] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -134,7 +138,12 @@ export const ReportContent = () => {
           placeholder="Extracted summary from the report will appear here, Get better recommendations by providing additional patient history and symptoms..."
           className="resize-none min-h-72 p-3"
         />
-        <Button variant={"outline"}>Submit Report</Button>
+        <Button
+          variant={"default"}
+          onClick={() => onReportConfirmation(reportSummary)}
+        >
+          Submit Report
+        </Button>
       </fieldset>
     </div>
   );

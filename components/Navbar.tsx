@@ -1,3 +1,5 @@
+"use client";
+
 import { Settings } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "./ui/button";
@@ -5,8 +7,16 @@ import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
 import { ReportContent } from "./ReportContent";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Navbar = () => {
+  const [reportSummary, setReportSummary] = useState<string>("");
+  const onReportConfirmation = (reportSummary: string) => {
+    setReportSummary(reportSummary);
+    toast.success("Updated report summary");
+  };
+
   return (
     <div className="flex w-full items-center border-b border-border sticky top-0 backdrop-blur-md">
       <div className="h-14 flex items-center w-full px-4 lg:px-8 py-1 justify-between">
@@ -26,7 +36,7 @@ export const Navbar = () => {
                 <VisuallyHidden>
                   <DialogTitle>Report Content</DialogTitle>
                 </VisuallyHidden>
-                <ReportContent />
+                <ReportContent onReportConfirmation={onReportConfirmation} />
               </DrawerContent>
             </Drawer>
           </div>
