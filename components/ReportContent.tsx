@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import axios from "axios";
 import { Textarea } from "./ui/textarea";
 import { ChangeEvent, useState } from "react";
 import { toast } from "sonner";
@@ -86,12 +87,28 @@ export const ReportContent = () => {
     reader.readAsDataURL(file);
   }
 
+  const extractDetails = async () => {
+    if (!base64Data) {
+      toast.error("Upload a valid Report");
+      return;
+    }
+
+    const response = await axios.post("/api/extractedReport", {
+      base64: base64Data,
+    });
+
+    if (response.status === 200) {
+      const reportText = response.data;
+      console.log(reportText);
+    }
+  };
+
   return (
     <div className="grid gap-6 w-full items-start p-4 pt-0 overflow-auto">
       <fieldset className="grid gap-6 rounded-lg relative border border-border p-4">
         <legend className="text-md font-semibold">Report Content</legend>
         <Input type="file" onChange={handleReportSelection} />
-        <Button className="gap-4">
+        <Button className="gap-4" onClick={extractDetails}>
           <Upload className="h-5 w-5" />
           <span>Upload Report</span>
         </Button>
