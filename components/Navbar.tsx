@@ -1,5 +1,3 @@
-"use client";
-
 import { Settings } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "./ui/button";
